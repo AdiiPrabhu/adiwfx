@@ -1,0 +1,11 @@
+langchain
+openai
+openapi-schema-pydantic
+tiktoken
+sentence-transformers
+fastapi
+uvicorn
+streamlit
+faiss-cpu
+requests
+python-dotenv 
