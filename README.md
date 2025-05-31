@@ -2,132 +2,85 @@
 
 ## 1. Overview
 
-This project implements a Retrieval-Augmented Generation (RAG) system designed to function as an intelligent assistant for Salesforce documentation. Users can ask questions in natural language, and the system retrieves relevant information from a pre-processed knowledge base of Salesforce help articles to generate accurate, context-aware answers.
+This project is a Retrieval-Augmented Generation (RAG) system designed to answer questions about Salesforce documentation. It functions as an AI-powered chatbot that takes a user's question, finds the most relevant information from a prepared knowledge base of Salesforce help articles, and generates a detailed, accurate answer.
 
-The core objective is to provide a reliable and efficient way for users to find answers to their Salesforce-related questions, complete with source references to the original documentation. This approach aims to enhance user self-service capabilities, reduce the time spent searching for information, and improve the overall understanding of Salesforce features.
+The primary goal is to provide users with quick, context-aware answers to their Salesforce-related queries, complete with source references to the original documentation, thereby increasing user trust and improving the support experience.
 
-The system is architected as a web service, comprising a backend API built with FastAPI to handle the AI logic and a frontend user interface developed with Streamlit for interaction. The entire application is containerized using Docker, ensuring consistency across different environments and readiness for deployment.
+The application is architected as a modern web service with a multi-container setup, containerized with Docker, and designed for cloud deployment on platforms like Render.
 
 ## 2. Features
 
-* **Natural Language Question Answering:** Accepts user queries in conversational language.
-* **Contextualized and Referenced Answers:** Generates answers based on specific content retrieved from the Salesforce documentation. Each answer is accompanied by URLs to the source documents, allowing users to verify information and explore topics in more depth.
-* **Confidence Scoring:** Provides a confidence score with each answer, derived from the language model's generation probabilities (logprobs). This helps users assess the reliability of the provided information.
-* **Robust API Backend:** The AI functionalities are exposed via a RESTful API built with FastAPI, facilitating potential integrations with other systems.
-* **Interactive Web Interface:** A Streamlit application offers an intuitive and user-friendly interface for querying the AI assistant.
+* **Question Answering:** Users can ask questions in natural language.
+* **Referenced Answers:** The generated answers are based on specific chunks of text from the Salesforce documentation, and the original source URLs are provided.
+* **Confidence Score:** Each answer includes a confidence score, calculated based on the language model's certainty in its generation, which helps the user gauge the reliability of the response.
+* **Decoupled Architecture:** A robust FastAPI backend serves the AI logic, while an independent Streamlit frontend provides an interactive user interface.
+* **Containerized:** Both frontend and backend services are individually containerized with Docker, ensuring clean separation and reproducibility.
 
-## 3. Architecture and Technical Stack
+## 3. Architecture and Tech Stack
 
-The system employs a Retrieval-Augmented Generation (RAG) architecture:
+The system follows a classic RAG architecture, implemented with two distinct services that communicate over an internal network.
 
-1.  **User Interaction (Frontend):** The user submits a question through the Streamlit web interface.
-2.  **API Request (Frontend to Backend):** The Streamlit application sends the user's question to the FastAPI backend API.
-3.  **Query Embedding & Retrieval (Backend):**
-    * The backend embeds the user's question into a high-dimensional vector using a Sentence Transformer model.
-    * This query vector is then used to perform a similarity search against a pre-built FAISS index of Salesforce documentation chunks. The most semantically similar document chunks are retrieved.
-4.  **Context Augmentation (Backend):** The retrieved text chunks (context) are combined with the original user question to form a comprehensive prompt for the language model.
-5.  **Answer Generation (Backend):** The augmented prompt is sent to the OpenAI GPT-3.5 Turbo model. The model is instructed to generate an answer based *solely* on the provided context, minimizing hallucinations and ensuring relevance.
-6.  **Response Formulation (Backend to Frontend):** The generated answer, along with source references and a confidence score, is packaged and returned to the Streamlit frontend for display to the user.
+1.  **Frontend Service (Streamlit Container):** A user submits a question through the Streamlit web app. The frontend service then sends a request to the backend service using its internal network address (e.g., `http://backend:8000`).
+2.  **Backend Service (FastAPI Container):**
+    * **Retrieval:** The backend receives the request, embeds the user's question into a vector using a Sentence Transformer model, and uses FAISS to find the most relevant document chunks from a pre-indexed vector database.
+    * **Augmentation:** The retrieved text chunks are combined with the original question into a detailed prompt.
+    * **Generation:** The prompt is sent to the OpenAI GPT-3.5 Turbo model to generate a final answer based *only* on the provided context.
+3.  **Response:** The final answer, source references, and confidence score are sent back to the frontend to be displayed to the user.
 
-### Technology Choices and Justifications
+### Technology Justification
 
-| Component                | Technology Used                          | Justification                                                                                                                                                                                                                                                           |
-| :----------------------- | :--------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Backend Framework** | **FastAPI** | Selected for its high performance (built on Starlette and Pydantic), asynchronous support crucial for I/O-bound operations like API calls, automatic data validation, and interactive API documentation (Swagger UI/OpenAPI). This makes it ideal for production-grade AI services. |
-| **Frontend Framework** | **Streamlit** | Chosen for its simplicity and speed in developing interactive web applications for machine learning and data science projects. It allows for rapid prototyping and deployment of user-facing AI tools using pure Python.                                                    |
-| **Embedding Model** | **SentenceTransformers (`all-MiniLM-L6-v2`)** | This model offers an excellent trade-off between embedding quality (semantic understanding) and computational efficiency. It is relatively lightweight, making it suitable for deployment in CPU-based containerized environments without sacrificing retrieval performance significantly. |
-| **Vector Store & Search**| **FAISS (Facebook AI Similarity Search)**| Utilized for its highly optimized algorithms for efficient similarity search and clustering of dense vectors. As an in-memory library, it provides very fast lookups and simplifies the architecture by avoiding the need for a separate vector database server for this project's scale. |
-| **Language Model (LLM)** | **OpenAI GPT-3.5 Turbo (via API)** | Leveraged for its advanced natural language understanding, instruction-following capabilities, and strong performance in generating coherent and contextually grounded answers. Using an API abstracts away the complexities of hosting and maintaining a large language model. |
-| **Containerization** | **Docker & Docker Compose** | Employed to package the application and its dependencies into isolated containers. This ensures consistency across development, testing, and production environments, simplifies dependency management, and aligns with MLOps best practices for reproducibility and deployment. |
-| **Deployment Platform** | **Hugging Face Spaces (Recommended)** | Chosen for its ease of use in deploying AI/ML applications, especially those containerized with Docker. It offers a seamless workflow from a GitHub repository to a live, shareable web application, including a generous free tier for CPU-based applications.           |
-| **Environment Management**| **`python-dotenv`** | Used to manage environment variables (like API keys) securely by loading them from a `.env` file, keeping sensitive information out of version control.                                                                                                     |
+| Component                | Technology                               | Justification                                                                                                                                                                                            |
+| :----------------------- | :--------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backend Framework** | **FastAPI** | Chosen for its high performance and native asynchronous support, making it ideal for I/O-bound tasks like API calls. Its automatic data validation and API documentation generation are crucial for building robust services. |
+| **Frontend Framework** | **Streamlit** | Selected for its ability to rapidly create and deploy interactive web applications for machine learning with simple Python scripts, providing a fast path to a user-facing demo.               |
+| **Embedding Model** | **SentenceTransformers (`all-MiniLM-L6-v2`)** | This model provides an excellent balance between embedding quality and computational efficiency, making it suitable for deployment in resource-constrained environments like free cloud tiers. |
+| **Vector Store** | **FAISS** | An in-memory vector library chosen for its exceptional speed and efficiency in similarity search. It simplifies the architecture by avoiding the need for a separate, externally hosted vector database. |
+| **Language Model** | **OpenAI GPT-3.5 Turbo** | Utilized via its API for state-of-the-art language comprehension and the ability to strictly follow instructions, which is critical for generating answers grounded in the provided context and reducing hallucinations.         |
+| **Containerization** | **Docker & Docker Compose** | This setup was chosen to manage the multi-service application. It defines the application's entire environment, ensuring consistency from local development to production and cleanly separating the concerns of the frontend and backend. |
+| **Deployment Platform** | **Render** | Selected for its excellent native support for deploying multi-container Docker applications via a `render.yaml` configuration file. It provides a simple developer experience, a direct Git-to-deploy workflow, and handles complex tasks like internal networking and secrets management. |
 
 ## 4. Local Setup and Installation
 
-To run this project locally, ensure you have Python (version 3.9 or newer), Docker, and Docker Compose installed on your system.
+To run this project locally, you will need `Docker` and `Docker Compose` installed.
 
-1.  **Clone the Repository:**
-    ```bash
+1.  **Clone the Repository**
+    ```sh
     git clone <your-repository-url>
-    cd <repository-name>
+    cd <repository-directory>
     ```
 
-2.  **Configure Environment Variables:**
-    The backend requires an OpenAI API key. Create a `.env` file within the `backend` directory:
-    ```bash
+2.  **Set Up Environment Variables**
+    The application requires an OpenAI API key. Create a `.env` file in the `backend` directory:
+    ```sh
     touch backend/.env
     ```
-    Add your OpenAI API key to this file:
-    ```env
+    Add your API key to this file:
+    ```
     # backend/.env
-    OPENAI_API_KEY="your_openai_api_key_here"
+    OPENAI_API_KEY="sk-..."
     ```
 
-3.  **Build and Run with Docker Compose:**
-    From the root directory of the project, execute the following command:
-    ```bash
+3.  **Build and Run with Docker Compose**
+    From the root of the project directory, run:
+    ```sh
     docker-compose up --build
     ```
-    This command will build the Docker images for the frontend and backend services (if they don't exist or if changes are detected) and then start the containers.
+    * The backend API will be available at `http://localhost:8000/docs`.
+    * The Streamlit frontend will be available at `http://localhost:8501`.
 
-    * The **backend API** will be accessible at `http://localhost:8000`. Interactive API documentation (Swagger UI) can be found at `http://localhost:8000/docs`.
-    * The **Streamlit frontend** application will be accessible at `http://localhost:8501`.
+## 5. Deployment on Render
 
-## 5. Deployment
+This application is configured for deployment on Render using the `render.yaml` file present in the repository root.
 
-The application is designed for deployment using Docker containers. For a simple and shareable deployment, Hugging Face Spaces is recommended, utilizing a single Docker container strategy that combines the frontend and backend.
+1.  **Push Code to GitHub:** Ensure your repository is up-to-date with all the correct files (`docker-compose.yml`, `render.yaml`, `backend/Dockerfile`, `frontend/Dockerfile`, etc.).
 
-**Steps for Hugging Face Spaces Deployment:**
-
-1.  **Code Adjustments for Single Container:**
-    * Modify `frontend/streamlit_app.py` to make API calls to the backend at `http://localhost:8000` (as both will run in the same container network space).
-    * In `frontend/streamlit_app.py`, add Python `subprocess` code at the beginning to start the Uvicorn server for the FastAPI backend when the Streamlit app launches.
-
-2.  **Create a Unified Dockerfile:**
-    Place a `Dockerfile` in the root of your project. This Dockerfile should:
-    * Start from a Python base image.
-    * Copy all project files (`frontend/`, `backend/`, etc.).
-    * Install dependencies from both `frontend/requirements.txt` and `backend/requirements.txt`.
-    * Expose the necessary ports (e.g., 8501 for Streamlit, 8000 for FastAPI).
-    * Set the `CMD` to run the Streamlit application (e.g., `streamlit run frontend/streamlit_app.py --server.port=8501 --server.address=0.0.0.0`).
-
-3.  **Push to GitHub:**
-    Commit all changes, including the new root `Dockerfile` and any modifications to `frontend/streamlit_app.py`, and push them to a GitHub repository.
-
-4.  **Create and Configure Hugging Face Space:**
-    * Navigate to Hugging Face and create a new "Space".
-    * Select "Docker" as the Space SDK and choose the "Blank" template.
-    * Connect the Space to your GitHub repository and the appropriate branch.
-    * In the Space settings, go to "Repository secrets" and add a new secret:
-        * **Name:** `OPENAI_API_KEY`
-        * **Value:** Your actual OpenAI API key.
-    * The Space will automatically build the Docker image from your root `Dockerfile` and deploy the application. Once built, it will provide a public URL.
+2.  **Access Your Application:** https://frontend-p48r.onrender.com/#whatfix-salesforce-help-assistant .
 
 ## 6. Evaluation Strategy
 
-Evaluating the performance and reliability of the RAG system is crucial. The `backend/evaluation.py` script provides a foundational framework for this. A comprehensive evaluation strategy should focus on the following key RAG-specific metrics:
+Evaluating the performance of the RAG system is critical. The `evaluation.py` script provides a starting point. A robust evaluation would involve a curated set of questions to measure key metrics:
 
-* **Context Precision:** Assesses the relevance of the document chunks retrieved by the vector search mechanism in relation to the user's query. Low precision indicates that the retrieval step is not finding appropriate context.
-* **Faithfulness (or Groundedness):** Measures how well the generated answer aligns with the information present in the retrieved context. Low faithfulness suggests the LLM might be hallucinating or generating information not supported by the provided documents.
-* **Answer Relevancy:** Evaluates whether the final generated answer directly addresses and satisfies the user's question. An answer can be faithful to the context but still not relevant to the original query.
+* **Context Precision:** Are the retrieved document chunks relevant to the question?
+* **Faithfulness:** Does the generated answer stick to the provided context?
+* **Answer Relevancy:** Is the answer relevant to the user's question?
 
-**Methodology:**
-
-1.  **Curated Dataset:** Create a representative dataset of question-answer pairs, ideally with known ground-truth answers and relevant document sources.
-2.  **Metric Calculation:** For each question in the dataset:
-    * Run the RAG pipeline to get the retrieved context and the generated answer.
-    * Use LLM-assisted evaluation or human annotators to score the outputs against the defined metrics.
-3.  **Frameworks:** For more systematic and automated evaluation, consider integrating frameworks such as:
-    * **Ragas:** An open-source framework specifically designed for evaluating RAG pipelines.
-    * **Evidently AI:** A tool for ML model monitoring and data/model drift detection, which can be adapted for evaluating aspects of RAG systems.
-
-Regular evaluation helps in identifying bottlenecks, understanding model behavior, and guiding improvements to the retrieval, augmentation, or generation stages.
-
-## 7. Future Improvements
-
-* **Automated Evaluation Pipeline:** Integrate Ragas or a similar framework to establish a CI/CD pipeline for evaluation, allowing for continuous monitoring of RAG performance as components are updated.
-* **Advanced Retrieval Strategies:** Explore more sophisticated retrieval techniques beyond basic dense vector search, such as hybrid search (combining keyword and semantic search), re-ranking of retrieved chunks, or query rewriting/expansion.
-* **LLM Experimentation:**
-    * Test different LLMs (e.g., newer OpenAI models, models from Anthropic, Cohere, or open-source alternatives like Llama 3 via Ollama, as explored in `backend/usingollama.py`).
-    * Fine-tune a smaller, open-source LLM on a domain-specific dataset if high-quality Q&A pairs are available.
-* **Conversational Context Management:** Implement chat history to enable multi-turn conversations, allowing the assistant to understand follow-up questions in the context of the ongoing dialogue.
