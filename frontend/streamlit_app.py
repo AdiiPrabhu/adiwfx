@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import requests
 
-BACKEND_URL = "http://localhost:8000"
+BACKEND_URL = "http://backend-l5dr:8000"
 
 st.set_page_config(page_title="Whatfix Salesforce Help Assistant", layout="wide")
 st.title("Whatfix Salesforce Help Assistant")
@@ -29,7 +29,7 @@ if user_input:
                 res = requests.post(
                     f"{BACKEND_URL}/ask",
                     json={"question": user_input},
-                    timeout=120  # give the backend up to 2 minutes
+                    timeout=120  
                 )
                 if res.status_code == 200:
                     data = res.json()
