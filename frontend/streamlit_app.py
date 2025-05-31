@@ -2,7 +2,7 @@ import os
 import streamlit as st
 import requests
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+BACKEND_URL = "http://localhost:8000"
 
 st.set_page_config(page_title="Whatfix Salesforce Help Assistant", layout="wide")
 st.title("Whatfix Salesforce Help Assistant")
