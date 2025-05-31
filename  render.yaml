@@ -1,0 +1,19 @@
+
+
+services:
+  
+  - type: pserv
+    name: backend
+    runtime: docker   
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+
+  
+  - type: web
+    name: frontend
+    runtime: docker   
+    dockerContext: ./frontend
+    dockerfilePath: ./frontend/Dockerfile
+    envVars:
+      - key: BACKEND_URL
+        value: http://backend:8000
