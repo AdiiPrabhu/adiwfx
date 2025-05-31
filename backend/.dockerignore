@@ -1,0 +1,11 @@
+# Python cache and virtual environments
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Data folders not needed by the running application
+# Your main.py only uses 'salesforce_help_data', so we can ignore the others.
+storage/
+wfxsupportdata/
